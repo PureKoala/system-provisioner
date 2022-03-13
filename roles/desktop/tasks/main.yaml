@@ -1,0 +1,53 @@
+---
+
+# Configure neovim
+- name: Install neovim and python, clipboard support depend on OS distribution
+  ansible.builtin.include_tasks:
+    file: "{{ ansible_facts['distribution'] }}_neovim.yaml"
+- name: Download neovim config
+  ansible.builtin.git:
+    repo: https://github.com/LeoJhonSong/vimrc
+    dest: ~/.config/nvim
+  environment: "{{ proxy_env }}"
+- name: Link nvim to vim
+  ansible.builtin.file:
+    src: /usr/bin/nvim
+    dest: /usr/bin/vim
+    state: link
+  become: true
+- name: Install neovim plugins  # TODO: source at local
+  ansible.builtin.shell:
+    cmd: |
+      vim --cmd ":source ~/.config/nvim/init.vim
+      :PlugInstall
+      :q
+      :q"
+  environment: "{{ proxy_env }}"
+  ignore_errors: true
+
+# Mount the Windows disk
+- name: Make sure the mount point exist
+  ansible.builtin.file:
+    path: "{{ Windows_mount_path }}"
+    state: directory
+  become: true
+  tags: disk
+- name: Mount the Windows disk by label 'Windows'
+  ansible.posix.mount:
+    path: "{{ Windows_mount_path }}"
+    src: LABEL=Windows
+    fstype: ntfs
+    state: present
+  become: true
+  tags: disk
+- name: Mount all file systems in fstab
+  ansible.builtin.shell:
+    cmd: mount -a
+  become: true
+  tags: disk
+
+# Install plenty of softwares based on OS distribution
+- name: Install plenty of softwares based on OS distribution
+  ansible.builtin.include_tasks:
+    file: "{{ ansible_facts['distribution'] }}_softwares.yaml"
+  tags: softwares

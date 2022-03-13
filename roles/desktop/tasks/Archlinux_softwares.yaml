@@ -1,0 +1,146 @@
+---
+
+# Install docker and start service
+- name: Install docker
+  ansible.builtin.pacman:
+    name: docker
+    state: present
+  become: true
+- name: start docker service and set to auto start
+  ansible.builtin.service:
+    name: docker
+    enabled: true
+    state: started
+- name: add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+  become: true
+
+- name: Install basics
+  kewlfft.aur.aur:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - base-devel
+    - bat
+    - lsd
+    - ranger
+    - fd
+    - fzf  # FIXME: how complete
+    - autojump
+    - unzip-iconv  # support unzip -O c
+    - inotify-tools
+- name: Install drivers
+  kewlfft.aur.aur:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - xf86-input-synaptics  # Sypatics touchpad driver
+    - optimus-manager-qt  # for nvidia optimus
+- name: Synaptics touchpad config
+  ansible.builtin.copy:
+    dest: /etc/X11/xorg.conf.d/30-touchpad.conf
+    content: |
+      Section "InputClass"
+          Identifier "touchpad"
+          Driver "synaptics"
+          MatchIsTouchpad "on"
+          Option "AccelFactor" "0.20"
+      EndSection
+- name: Optimus manager config  # see: https://github.com/Askannz/optimus-manager#important--manjaro-kde-users
+  ansible.builtin.replace:
+    path: /etc/sddm.conf
+    regexp: '^(# )?{{ item }}'
+    replace: '# {{ item }}'
+  loop:
+    - DisplayCommand
+    - DisplayStopCommand
+  become: true
+- name: Set graphic environment vars
+  ansible.builtin.blockinfile:
+    path: ~/.pam_environment
+    create: true
+    block: |
+      # for fcitx input method
+      GTK_IM_MODULE DEFAULT=fcitx
+      QT_IM_MODULE DEFAULT=fcitx
+      XMODIFIERS DEFAULT=@im=fcitx
+      # for deepin wine high resolution
+      DEEPIN_WINE_SCALE=1.75
+      # for wps high resolution
+      QT_SCREEN_SCALE_FACTORS=1
+- name: Make sure aria2 config directory
+  ansible.builtin.file:
+    path: ~/.config/aria2/
+    state: directory
+- name: Copy aria2 config
+  ansible.builtin.copy:
+    src: aria2.conf
+    dest: ~/.config/aria2/
+- name: Install input method
+  kewlfft.aur.aur:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - fcitx5-im
+    - fcitx5-material-color
+    - fcitx5-chinese-addons
+- name: Install desktop softwares
+  kewlfft.aur.aur:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - kvantum-qt5
+    - latte-dock
+    - google-chrome
+    - typora
+    - visual-studio-code-bin
+    - github-desktop-bin
+    - flameshot
+    - peek
+    - simplescreenrecorder
+    - vlc
+    - handbrake
+    - kdenlive
+    - jpegoptim
+    - optipng
+    - nmap
+    - sshfs
+    - frp
+    - manjaro-settings-samba
+    - ventoy-bin
+    - aria2
+    - remmina
+    - freerdp
+    - minicom
+    - nodejs
+    - jdk-openjdk
+- name: Install office softwares
+  kewlfft.aur.aur:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - deepin-wine-tim
+    - deepin-wine-wechat  # TODO: font needed
+    - zoom
+    - wps-office-cn  # wps套件国内版
+    - wps-office-mui-zh-cn  # wps中文语言包
+    - ttf-wps-fonts  # wps需要的字体和符号
+    - wps-office-mime-cn  # wps mime types
+- name: Configure zoom scale
+  ansible.builtin.lineinfile:
+    path: ~/.config/zoomus.conf
+    regexp: '^autoScale'
+    line: autoScale=false
+- name: Install TexLive
+  kewlfft.aur.aur:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - texlive-most
+    - texlive-lang
+    - biber
+- name: Install dependency for code syntax hihglight in latex
+  ansible.builtin.pip:
+    name: pygments

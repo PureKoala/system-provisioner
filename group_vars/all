@@ -1,0 +1,6 @@
+proxy_env:
+  http_proxy: http://127.0.0.1:7890
+  https_proxy: http://127.0.0.1:7890
+
+source_dir: ~/Desktop/system-provisioner
+Windows_mount_path: /run/media/Windows
