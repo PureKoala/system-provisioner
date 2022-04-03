@@ -25,3 +25,5 @@ sudo pacman -S ansible sshpass cowsay
 ```shell
 ansible-galaxy collection install -r /path/to/requirements.yaml
 ```
+
+TODO: 重定向输出到另一个端口 https://stackoverflow.com/questions/41194021/how-can-i-show-progress-for-a-long-running-ansible-task
